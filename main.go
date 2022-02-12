@@ -3,6 +3,7 @@ package main
 import (
 	"booking/helper"
 	"fmt"
+	"sync"
 	"time"
 )
 
@@ -11,6 +12,8 @@ var conferenceName = "Go conference"
 // conferenceName := "Go conference"
 var remainingTickets uint = 50
 var bookings  = make([]UserData, 0)
+
+var wg = sync.WaitGroup{}
 
 type UserData struct {
 	firstName string
@@ -22,43 +25,43 @@ type UserData struct {
 func main() {
 	greetUser()
 
-	for{
-		firstName, lastName, email, userTickets := getUserInput()
+	firstName, lastName, email, userTickets := getUserInput()
 
-		isValidName, isValidEmail, isValidTicketNumber := helper.ValidateUserInput(firstName, lastName, email, userTickets, remainingTickets)
-		
-		if isValidName && isValidEmail && isValidTicketNumber {
-			bookTicket(userTickets, firstName, lastName, email)
-			go sendTicket(userTickets, firstName, lastName, email)
-			
-			firstNames := getFirstNames()
-			fmt.Printf("The first names of bookings are: %v \n", firstNames)
+	isValidName, isValidEmail, isValidTicketNumber := helper.ValidateUserInput(firstName, lastName, email, userTickets, remainingTickets)
 	
-			noTicketsRemaining  := remainingTickets <= 0
-			if noTicketsRemaining {
-				fmt.Println("Our conference is booked out. Come back next year.")
-				break
-			}
-		} else {
-			fmt.Printf("We only have %v tickets reamaining. So you can't book %v .\n", remainingTickets, userTickets)
-			// continue
+	if isValidName && isValidEmail && isValidTicketNumber {
+		bookTicket(userTickets, firstName, lastName, email)
+		wg.Add(1)
+		go sendTicket(userTickets, firstName, lastName, email)
+		
+		firstNames := getFirstNames()
+		fmt.Printf("The first names of bookings are: %v \n", firstNames)
+
+		noTicketsRemaining  := remainingTickets <= 0
+		if noTicketsRemaining {
+			fmt.Println("Our conference is booked out. Come back next year.")
+			// break
 		}
+	} else {
+		fmt.Printf("We only have %v tickets reamaining. So you can't book %v .\n", remainingTickets, userTickets)
+		// continue
 	}
+	// city := "London"
 
-	city := "London"
+	// switch city {
+	// 	case "New York":
+	// 		// Execute code for booking new york conference tickets
+	// 	case "Singapore", "Hong Kong":
+	// 		// 
+	// 	case "London", "Berlin":
+	// 		// 
+	// 	case "Mexico City":
+	// 		// 
+	// 	default:
+	// 		fmt.Println("No valid city selected")
+	// }
 
-	switch city {
-		case "New York":
-			// Execute code for booking new york conference tickets
-		case "Singapore", "Hong Kong":
-			// 
-		case "London", "Berlin":
-			// 
-		case "Mexico City":
-			// 
-		default:
-			fmt.Println("No valid city selected")
-	}
+	wg.Wait()
 }
 
 func greetUser(){
@@ -119,4 +122,6 @@ func sendTicket(userTickets uint, firstName string, lastName string, email strin
 	fmt.Println("############")
 	fmt.Printf("Sending ticket:\n %v to email address %v\n", ticket, email)
 	fmt.Println("############")
+
+	wg.Done()
 }
